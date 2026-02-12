@@ -26,6 +26,13 @@ function loadFromStorage() {
 }
 
 function saveToStorage() {
+  questions = questions.map((q) => {
+    if (!q.tags || !Array.isArray(q.tags) || q.tags.length === 0) {
+      q.tags = ["Общее"];
+    }
+    return q;
+  });
+
   const data = {
     questions: questions,
     images: imageStore,
@@ -33,6 +40,7 @@ function saveToStorage() {
   };
   localStorage.setItem("quizConstructor", JSON.stringify(data));
   updateStats();
+  console.log("Сохранено в localStorage, вопросы:", questions.length);
 }
 
 function createNewQuestion() {
@@ -57,8 +65,15 @@ function createNewQuestion() {
 }
 
 function editQuestion(id) {
-  const question = questions.find((q) => q.id == id);
+  const idStr = id.toString();
+
+  const question = questions.find((q) => {
+    if (!q.id) return false;
+    return q.id.toString() === idStr;
+  });
+
   if (!question) {
+    console.error("Вопрос не найден:", id);
     showNotification("Вопрос не найден", "error");
     return;
   }
@@ -76,8 +91,17 @@ function editQuestion(id) {
   document.getElementById("questionPoints").value = question.points || 1;
   document.getElementById("questionText").value = question.question || "";
 
-  tagsList = question.tags ? [...question.tags] : [];
+  if (
+    question.tags &&
+    Array.isArray(question.tags) &&
+    question.tags.length > 0
+  ) {
+    tagsList = [...question.tags];
+  } else {
+    tagsList = ["Общее"];
+  }
   updateTagsList();
+  console.log("Загружены теги при редактировании:", tagsList);
 
   onQuestionTypeChange();
 
@@ -115,27 +139,63 @@ function editQuestion(id) {
 
 function deleteQuestion(id) {
   if (confirm("Вы уверены, что хотите удалить этот вопрос?")) {
-    questions = questions.filter((q) => q.id !== id);
-    saveToStorage();
-    updateQuestionsList();
-    updateStats();
-    showNotification("Вопрос удален", "success");
+    const idStr = id.toString();
+
+    const index = questions.findIndex((q) => {
+      if (!q.id) return false;
+      return q.id.toString() === idStr;
+    });
+
+    if (index !== -1) {
+      questions.splice(index, 1);
+
+      saveToStorage();
+
+      updateQuestionsList();
+      updateStats();
+
+      if (questions.length === 0) {
+        document.getElementById("emptyState").style.display = "block";
+        document.getElementById("questionForm").style.display = "none";
+      }
+
+      showNotification("Вопрос успешно удален", "success");
+      console.log("Вопрос удален, осталось вопросов:", questions.length);
+    } else {
+      console.error("Вопрос с id", id, "не найден");
+      showNotification("Ошибка: вопрос не найден", "error");
+    }
   }
 }
 
 function duplicateQuestion(id) {
-  const original = questions.find((q) => q.id === id);
+  const idStr = id.toString();
+
+  const original = questions.find((q) => {
+    if (!q.id) return false;
+    return q.id.toString() === idStr;
+  });
+
   if (original) {
-    const duplicate = {
-      ...JSON.parse(JSON.stringify(original)),
-      id: Date.now() + Math.random(),
-      question: original.question + " (копия)",
-    };
+    const duplicate = JSON.parse(JSON.stringify(original));
+
+    duplicate.id =
+      "q_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+
+    duplicate.question = original.question + " (копия)";
+
     questions.push(duplicate);
+
     saveToStorage();
+
     updateQuestionsList();
     updateStats();
+
     showNotification("Вопрос скопирован", "success");
+    console.log("Вопрос скопирован, новый id:", duplicate.id);
+  } else {
+    console.error("Оригинал вопроса не найден:", id);
+    showNotification("Ошибка: вопрос не найден", "error");
   }
 }
 
@@ -172,11 +232,13 @@ function saveQuestion() {
   }
 
   const question = {
-    id: currentEditId || Date.now() + Math.random(),
+    id:
+      currentEditId ||
+      "q_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
     type: type,
     question: questionText,
     points: points,
-    tags: [...tagsList],
+    tags: tagsList && tagsList.length > 0 ? [...tagsList] : ["Общее"],
     correctAnswer: correctAnswer,
   };
 
@@ -194,6 +256,12 @@ function saveQuestion() {
       question.imageUrl = "images/" + imageName;
 
       imageStore[imageName] = imageData;
+
+      console.log(
+        "Сохранено изображение:",
+        imageName,
+        imageData.substring(0, 50) + "...",
+      );
     } else {
       showNotification("Загрузите изображение", "error");
       return;
@@ -238,6 +306,11 @@ function resetForm() {
   tagsList = [];
   updateTagsList();
 
+  const tagInput = document.getElementById("tagInput");
+  if (tagInput) tagInput.value = "";
+
+  const tagsListDiv = document.getElementById("tagsList");
+  if (tagsListDiv) tagsListDiv.innerHTML = "";
   document.getElementById("tagInput").value = "";
 
   const optionsList = document.getElementById("optionsList");
@@ -430,32 +503,45 @@ function handleTagKeydown(e) {
     const input = document.getElementById("tagInput");
     const tag = input.value.trim();
 
-    if (tag && !tagsList.includes(tag)) {
-      tagsList.push(tag);
-      updateTagsList();
+    if (tag) {
+      if (!tagsList.includes(tag)) {
+        tagsList.push(tag);
+        updateTagsList();
+        console.log("Добавлен тег:", tag, "Все теги:", tagsList);
+      }
     }
 
     input.value = "";
   }
 }
 
-function removeTag(tag) {
-  tagsList = tagsList.filter((t) => t !== tag);
+function removeTag(tagToRemove) {
+  tagsList = tagsList.filter((tag) => tag !== tagToRemove);
   updateTagsList();
+  console.log("Удален тег:", tagToRemove, "Остались:", tagsList);
 }
 
 function updateTagsList() {
   const tagsListDiv = document.getElementById("tagsList");
+  if (!tagsListDiv) return;
+
+  if (!tagsList || tagsList.length === 0) {
+    tagsListDiv.innerHTML = "";
+    return;
+  }
+
   tagsListDiv.innerHTML = tagsList
     .map(
       (tag) => `
-                <span class="tag-item">
-                    <i class="fas fa-tag"></i> ${tag}
-                    <i class="fas fa-times" onclick="removeTag('${tag}')" style="cursor: pointer;"></i>
-                </span>
-            `,
+        <span class="tag-item">
+            <i class="fas fa-tag"></i> ${tag}
+            <i class="fas fa-times" onclick="removeTag('${tag}')" style="cursor: pointer; margin-left: 5px;"></i>
+        </span>
+    `,
     )
     .join("");
+
+  console.log("Обновлены теги на экране:", tagsList);
 }
 
 function initDragAndDrop() {
@@ -547,15 +633,22 @@ function updateQuestionsList() {
                                     </span>
                                     ${
                                       q.tags &&
-                                      q.tags
-                                        .map(
-                                          (tag) => `
-                                        <span class="badge badge-tag">
-                                            <i class="fas fa-tag"></i> ${tag}
-                                        </span>
-                                    `,
-                                        )
-                                        .join("")
+                                      Array.isArray(q.tags) &&
+                                      q.tags.length > 0
+                                        ? q.tags
+                                            .map(
+                                              (tag) => `
+        <span class="badge badge-tag">
+            <i class="fas fa-tag"></i> ${tag}
+        </span>
+      `,
+                                            )
+                                            .join("")
+                                        : `
+        <span class="badge badge-tag">
+            <i class="fas fa-tag"></i> Общее
+        </span>
+    `
                                     }
                                 </div>
                             </div>
@@ -574,6 +667,7 @@ function updateQuestionsList() {
                         </div>
                     </div>
                 `;
+    console.log("Отображение вопроса:", { id: q.id, text: q.question });
   });
 
   listDiv.innerHTML = html;
@@ -614,13 +708,22 @@ function closeModal(modalId) {
 }
 
 function exportJSON() {
+  const questionsForExport = questions.map((q) => {
+    const question = { ...q };
+
+    delete question.id;
+
+    if (question.type === "image" && question.imageData) {
+      console.log("Экспортируем изображение:", question.imageName);
+    }
+
+    return question;
+  });
+
   const data = {
-    questions: questions.map((q) => {
-      const { imageData, ...question } = q;
-      return question;
-    }),
+    questions: questionsForExport,
     exportDate: new Date().toISOString(),
-    version: "1.0",
+    version: "1.1",
   };
 
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -629,7 +732,7 @@ function exportJSON() {
   saveAs(blob, `questions_${new Date().toISOString().slice(0, 10)}.json`);
 
   closeModal("exportModal");
-  showNotification("JSON файл сохранен", "success");
+  showNotification("JSON файл с изображениями сохранен", "success");
 }
 
 function exportWithImages() {

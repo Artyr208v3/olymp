@@ -151,30 +151,38 @@ function processZipFile(file) {
 
       window.imageStore = window.imageStore || {};
 
-      for (const entry of fileEntries) {
-        if (entry.path.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
-          const imageName = entry.path.split("/").pop();
-          try {
-            const imageData = await entry.entry.async("base64");
+for (const entry of fileEntries) {
+    if (entry.path.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+        const imageName = entry.path.split('/').pop();
+        try {
+            const imageData = await entry.entry.async('base64');
             const mimeType = getMimeType(entry.path);
-            window.imageStore[imageName] =
-              `data:${mimeType};base64,${imageData}`;
-          } catch (e) {
-            console.warn("Не удалось загрузить изображение:", entry.path);
-          }
+            const dataUrl = `data:${mimeType};base64,${imageData}`;
+            
+            window.imageStore[imageName] = dataUrl;
+            console.log('Загружено изображение из ZIP:', imageName);
+        } catch (e) {
+            console.warn('Не удалось загрузить изображение:', entry.path);
         }
-      }
+    }
+}
 
-      questions = questions.map((q) => {
-        if (q.type === "image" && q.imageUrl) {
-          const imageName = q.imageUrl.split("/").pop();
-          if (window.imageStore[imageName]) {
-            q.imageData = window.imageStore[imageName];
-            q.imageName = imageName;
-          }
+questions = questions.map(q => {
+    if (q.type === 'image') {
+        if (q.imageName && window.imageStore[q.imageName]) {
+            q.imageData = window.imageStore[q.imageName];
+            console.log('Привязано изображение к вопросу:', q.imageName);
+        } else if (q.imageUrl) {
+            const imageName = q.imageUrl.split('/').pop();
+            if (window.imageStore[imageName]) {
+                q.imageData = window.imageStore[imageName];
+                q.imageName = imageName;
+                console.log('Привязано изображение по URL:', imageName);
+            }
         }
-        return q;
-      });
+    }
+    return q;
+});
 
       quizManager.loadQuestions(questions);
 
@@ -285,202 +293,246 @@ function displayQuestion() {
   document.getElementById("correctAnswer").classList.remove("show");
 }
 
+// ========== ОТОБРАЖЕНИЕ ВОПРОСА С ИЗОБРАЖЕНИЕМ ==========
 function generateAnswerField(question) {
-  const answersArea = document.getElementById("answersArea");
-
-  switch (question.type) {
-    case "free":
-      answersArea.innerHTML =
-        '<input type="text" class="free-answer" id="userAnswer" placeholder="Введите ваш ответ">';
-      break;
-
-    case "checkbox":
-      let html = '<div class="checkbox-group" id="userAnswer">';
-      question.options.forEach((option) => {
-        html += `
+    const answersArea = document.getElementById('answersArea');
+    
+    switch(question.type) {
+        case 'free':
+            answersArea.innerHTML = '<input type="text" class="free-answer" id="userAnswer" placeholder="Введите ваш ответ">';
+            break;
+            
+        case 'checkbox':
+            let html = '<div class="checkbox-group" id="userAnswer">';
+            question.options.forEach(option => {
+                html += `
                     <label class="checkbox-item">
                         <input type="checkbox" value="${option}">
                         ${option}
                     </label>
                 `;
-      });
-      html += "</div>";
-      answersArea.innerHTML = html;
-      break;
-
-    case "radio":
-      let radioHtml = '<div class="radio-group" id="userAnswer">';
-      question.options.forEach((option) => {
-        radioHtml += `
+            });
+            html += '</div>';
+            answersArea.innerHTML = html;
+            break;
+            
+        case 'radio':
+            let radioHtml = '<div class="radio-group" id="userAnswer">';
+            question.options.forEach(option => {
+                radioHtml += `
                     <label class="radio-item">
                         <input type="radio" name="radioGroup" value="${option}">
                         ${option}
                     </label>
                 `;
-      });
-      radioHtml += "</div>";
-      answersArea.innerHTML = radioHtml;
-      break;
-
-    case "image":
-      let imageHtml = "";
-
-      if (question.imageUrl) {
-        imageHtml += `
+            });
+            radioHtml += '</div>';
+            answersArea.innerHTML = radioHtml;
+            break;
+            
+        case 'image':
+            let imageHtml = '';
+            
+            let imageUrl = null;
+            
+            if (question.imageData) {
+                imageUrl = question.imageData;
+                console.log('Загружаем изображение из imageData');
+            }
+            else if (question.imageName && window.imageStore && window.imageStore[question.imageName]) {
+                imageUrl = window.imageStore[question.imageName];
+                console.log('Загружаем изображение из imageStore');
+            }
+            else if (question.imageUrl) {
+                imageUrl = question.imageUrl;
+                console.log('Загружаем изображение по URL:', imageUrl);
+            }
+            
+            if (imageUrl) {
+                imageHtml += `
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="${question.imageUrl}" 
+                        <img src="${imageUrl}" 
                              alt="Изображение к вопросу" 
-                             style="max-width: 100%; max-height: 300px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                             style="max-width: 100%; max-height: 300px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);"
+                             onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'><rect width=\'200\' height=\'200\' fill=\'%23f0f0f0\'/><text x=\'50%\' y=\'50%\' font-size=\'14\' text-anchor=\'middle\' fill=\'%23999\'>Изображение не загрузилось</text></svg>';">
                     </div>
                 `;
-      }
-      imageHtml += '<div class="radio-group" id="userAnswer">';
-      question.options.forEach((option, i) => {
-        imageHtml += `
-            <label class="radio-item">
-                <input type="radio" name="radioGroup" value="${option}">
-                ${option}
-            </label>
-            `;
-      });
-      imageHtml += "</div>";
-
-      answersArea.innerHTML = imageHtml;
-      break;
-    default:
-      answersArea.innerHTML = '<p class="error">Неизвестный тип вопроса</p>';
-  }
+            } else {
+                imageHtml += `
+                    <div style="text-align: center; margin-bottom: 20px; padding: 40px; background: #f8f9fa; border-radius: 10px;">
+                        <i class="fas fa-image" style="font-size: 48px; color: #ccc;"></i>
+                        <p style="color: #999; margin-top: 10px;">Изображение отсутствует</p>
+                    </div>
+                `;
+            }
+            
+            if (question.options && question.options.length > 0) {
+                imageHtml += '<div class="radio-group" id="userAnswer">';
+                question.options.forEach(option => {
+                    imageHtml += `
+                        <label class="radio-item">
+                            <input type="radio" name="radioGroup" value="${option}">
+                            ${option}
+                        </label>
+                    `;
+                });
+                imageHtml += '</div>';
+            } else {
+                imageHtml += '<p class="error">Нет вариантов ответа</p>';
+            }
+            
+            answersArea.innerHTML = imageHtml;
+            
+            if (!document.querySelector('link[href*="font-awesome"]')) {
+                const fa = document.createElement('link');
+                fa.rel = 'stylesheet';
+                fa.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+                document.head.appendChild(fa);
+            }
+            break;
+            
+        default:
+            answersArea.innerHTML = '<p class="error">Неизвестный тип вопроса</p>';
+    }
 }
 
+// ========== ПРОВЕРКА ОТВЕТА ==========
 function handleCheckAnswer() {
-  if (!currentQuestion) return;
-
-  let userAnswer = "";
-
-  switch (currentQuestion.type) {
-    case "free":
-      userAnswer = document.getElementById("userAnswer")?.value || "";
-      break;
-    case "checkbox":
-      const checkboxes = document.querySelectorAll(
-        '#userAnswer input[type="checkbox"]:checked',
-      );
-      userAnswer = Array.from(checkboxes).map((cb) => cb.value);
-      break;
-    case "radio":
-      const radio = document.querySelector('input[name="radioGroup"]:checked');
-      userAnswer = radio ? radio.value : "Ничего не выбрано";
-      break;
-    case "image":
-      const imageRadio = document.querySelector(
-        'input[name="radioGroup"]:checked',
-      );
-      userAnswer = imageRadio ? imageRadio.value : "Ничего не выбрано";
-      break;
-  }
-
-  const result = quizManager.checkAnswer(userAnswer);
-
-  displayResult(currentQuestion, userAnswer, result);
-
-  document.getElementById("scoreDisplay").innerHTML =
-    `⭐ ${quizManager.totalScore} / ${quizManager.maxScore} баллов`;
+    if (!currentQuestion) return;
+    
+    let userAnswer = '';
+    
+    switch(currentQuestion.type) {
+        case 'free':
+            userAnswer = document.getElementById('userAnswer')?.value || '';
+            break;
+        case 'checkbox':
+            const checkboxes = document.querySelectorAll('#userAnswer input[type="checkbox"]:checked');
+            userAnswer = Array.from(checkboxes).map(cb => cb.value);
+            break;
+        case 'radio':
+        case 'image':
+            const radio = document.querySelector('input[name="radioGroup"]:checked');
+            userAnswer = radio ? radio.value : 'Ничего не выбрано';
+            break;
+    }
+    
+    // Проверяем ответ через менеджер
+    const result = quizManager.checkAnswer(userAnswer);
+    
+    // Показываем результат
+    displayResult(currentQuestion, userAnswer, result);
+    
+    // Обновляем счет
+    document.getElementById('scoreDisplay').innerHTML = 
+        `⭐ ${quizManager.totalScore} / ${quizManager.maxScore} баллов`;
 }
 
+// ========== ОТОБРАЖЕНИЕ РЕЗУЛЬТАТА ==========
 function displayResult(question, userAnswer, result) {
-  const correctDiv = document.getElementById("correctAnswer");
-
-  let resultHtml = `
-        <div class="result-badge ${result.isCorrect ? "badge-correct" : "badge-incorrect"}">
-            ${result.isCorrect ? "✅ Верно!" : "❌ Неверно!"}
-            ${result.isCorrect ? `+${result.pointsEarned} балл${result.pointsEarned > 1 ? "а" : ""}` : ""}
+    const correctDiv = document.getElementById('correctAnswer');
+    
+    // Определяем сообщение в зависимости от наличия ответа
+    let resultMessage = '';
+    let resultClass = '';
+    
+    if (result.hasNoAnswer) {
+        resultMessage = '❌ Ответ не дан!';
+        resultClass = 'badge-incorrect';
+    } else {
+        resultMessage = result.isCorrect 
+            ? `✅ Верно! +${result.pointsEarned} балл${result.pointsEarned > 1 ? 'а' : ''}` 
+            : '❌ Неверно!';
+        resultClass = result.isCorrect ? 'badge-correct' : 'badge-incorrect';
+    }
+    
+    let resultHtml = `
+        <div class="result-badge ${resultClass}">
+            ${resultMessage}
         </div>
     `;
-
-  switch (question.type) {
-    case "free":
-      resultHtml += `
+    
+    switch(question.type) {
+        case 'free':
+            resultHtml += `
                 <div style="margin-bottom: 15px;">
                     <strong>Правильный ответ:</strong> 
                     <span class="answer-item answer-correct">${result.correctAnswer}</span>
                 </div>
                 <div>
                     <strong>Ваш ответ:</strong> 
-                    <span class="answer-item ${result.isCorrect ? "answer-correct" : "answer-incorrect"}">
-                        ${userAnswer || "(пусто)"}
+                    <span class="answer-item ${result.hasNoAnswer ? 'answer-incorrect' : (result.isCorrect ? 'answer-correct' : 'answer-incorrect')}">
+                        ${result.hasNoAnswer ? '❌ Нет ответа' : (userAnswer || '(пусто)')}
                     </span>
                 </div>
             `;
-      break;
-
-    case "checkbox":
-      resultHtml += `
+            break;
+            
+        case 'checkbox':
+            resultHtml += `
                 <div style="margin-bottom: 15px;">
                     <strong>Правильные ответы:</strong><br>
-                    ${result.correctAnswer.map((a) => `<span class="answer-item answer-correct">${a}</span>`).join("")}
+                    ${result.correctAnswer.map(a => `<span class="answer-item answer-correct">${a}</span>`).join('')}
                 </div>
                 <div>
                     <strong>Ваш ответ:</strong><br>
             `;
-
-      if (userAnswer.length === 0) {
-        resultHtml += `<span class="answer-item answer-incorrect">(ничего не выбрано)</span>`;
-      } else {
-        userAnswer.forEach((answer) => {
-          const isAnswerCorrect = result.correctAnswer.includes(answer);
-          const className = isAnswerCorrect
-            ? "answer-correct"
-            : "answer-incorrect";
-          resultHtml += `<span class="answer-item ${className}">${answer}</span>`;
-        });
-      }
-
-      const missingAnswers = result.correctAnswer.filter(
-        (a) => !userAnswer.includes(a),
-      );
-      if (missingAnswers.length > 0) {
-        resultHtml += `<div style="margin-top: 15px;"><strong>Пропущены:</strong><br>`;
-        missingAnswers.forEach((answer) => {
-          resultHtml += `<span class="answer-item answer-missing">${answer}</span>`;
-        });
-        resultHtml += `</div>`;
-      }
-      break;
-
-    case "radio":
-      resultHtml += `
+            
+            if (result.hasNoAnswer) {
+                resultHtml += `<span class="answer-item answer-incorrect">❌ Ничего не выбрано</span>`;
+            } else if (userAnswer.length === 0) {
+                resultHtml += `<span class="answer-item answer-incorrect">(ничего не выбрано)</span>`;
+            } else {
+                userAnswer.forEach(answer => {
+                    const isAnswerCorrect = result.correctAnswer.includes(answer);
+                    const className = isAnswerCorrect ? 'answer-correct' : 'answer-incorrect';
+                    resultHtml += `<span class="answer-item ${className}">${answer}</span>`;
+                });
+            }
+            
+            if (!result.hasNoAnswer) {
+                const missingAnswers = result.correctAnswer.filter(a => !userAnswer.includes(a));
+                if (missingAnswers.length > 0) {
+                    resultHtml += `<div style="margin-top: 15px;"><strong>Пропущены:</strong><br>`;
+                    missingAnswers.forEach(answer => {
+                        resultHtml += `<span class="answer-item answer-missing">${answer}</span>`;
+                    });
+                    resultHtml += `</div>`;
+                }
+            }
+            break;
+            
+        case 'radio':
+        case 'image':
+            resultHtml += `
                 <div style="margin-bottom: 15px;">
                     <strong>Правильный ответ:</strong> 
                     <span class="answer-item answer-correct">${result.correctAnswer}</span>
                 </div>
                 <div>
                     <strong>Ваш ответ:</strong> 
-                    <span class="answer-item ${result.isCorrect ? "answer-correct" : "answer-incorrect"}">
-                        ${userAnswer}
+                    <span class="answer-item ${result.hasNoAnswer ? 'answer-incorrect' : (result.isCorrect ? 'answer-correct' : 'answer-incorrect')}">
+                        ${result.hasNoAnswer ? '❌ Нет ответа' : userAnswer}
                     </span>
                 </div>
             `;
-      break;
-    case "image":
-      resultHtml += `
-        <div style="margin-bottom: 15px;">
-            <strong>Правильный ответ:</strong> 
-            <span class="answer-item answer-correct">${result.correctAnswer}</span>
-        </div>
-        <div>
-            <strong>Ваш ответ:</strong> 
-            <span class="answer-item ${result.isCorrect ? "answer-correct" : "answer-incorrect"}">
-                ${userAnswer}
-            </span>
-        </div>
-    `;
-      break;
-  }
-
-  correctDiv.innerHTML = resultHtml;
-  correctDiv.classList.add("show");
-  correctDiv.classList.remove("correct", "incorrect");
-  correctDiv.classList.add(result.isCorrect ? "correct" : "incorrect");
+            break;
+    }
+    
+    // Добавляем подсказку если ответ не был дан
+    if (result.hasNoAnswer) {
+        resultHtml += `
+            <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 8px; color: #856404;">
+                <i class="fas fa-info-circle"></i> 
+                Ответ не был выбран. За такие вопросы баллы не начисляются.
+            </div>
+        `;
+    }
+    
+    correctDiv.innerHTML = resultHtml;
+    correctDiv.classList.add('show');
+    correctDiv.classList.remove('correct', 'incorrect');
+    correctDiv.classList.add(result.isCorrect ? 'correct' : 'incorrect');
 }
 
 function handleNextQuestion() {
@@ -494,69 +546,110 @@ function handleNextQuestion() {
 }
 
 function showResults() {
-  const stats = quizManager.getOverallStats();
-  const tagsStats = quizManager.getTagsStats();
-
-  document.getElementById("totalQuestions").textContent = stats.totalQuestions;
-  document.getElementById("correctAnswers").textContent = stats.correctCount;
-  document.getElementById("wrongAnswers").textContent = stats.wrongCount;
-  document.getElementById("totalScore").textContent =
-    `${stats.totalScore} / ${stats.maxScore}`;
-
-  chartManager.updateChart(stats.correctCount, stats.wrongCount);
-
-  displayTagsStats(tagsStats);
-
-  displayDetailedResults();
+    console.log('Показываем результаты...');
+    
+    const stats = quizManager.getOverallStats();
+    const tagsStats = quizManager.getTagsStats();
+    
+    console.log('Статистика для отображения:', stats);
+    
+    const totalQuestionsEl = document.getElementById('totalQuestions');
+    const correctAnswersEl = document.getElementById('correctAnswers');
+    const wrongAnswersEl = document.getElementById('wrongAnswers');
+    const noAnswerCountEl = document.getElementById('noAnswerCount');
+    const unansweredCountEl = document.getElementById('unansweredCount');
+    const totalScoreEl = document.getElementById('totalScore');
+    
+    if (totalQuestionsEl) totalQuestionsEl.textContent = stats.totalQuestions || 0;
+    if (correctAnswersEl) correctAnswersEl.textContent = stats.correctCount || 0;
+    if (wrongAnswersEl) wrongAnswersEl.textContent = stats.incorrectCount || 0;
+    if (noAnswerCountEl) noAnswerCountEl.textContent = stats.noAnswerCount || 0;
+    if (unansweredCountEl) unansweredCountEl.textContent = stats.unansweredCount || 0;
+    if (totalScoreEl) totalScoreEl.textContent = `${stats.totalScore || 0} / ${stats.maxScore || 0}`;
+    
+    setTimeout(() => {
+        try {
+            chartManager.updateChart(stats);
+            console.log('Диаграмма создана');
+        } catch (e) {
+            console.error('Ошибка создания диаграммы:', e);
+        }
+    }, 100); 
+    
+    displayTagsStats(tagsStats);
+    
+    displayDetailedResults();
 }
 
 function displayTagsStats(tagsStats) {
-  const container = document.getElementById("tagsStatsContainer");
-  let html = "";
-
-  for (const [tag, stats] of Object.entries(tagsStats)) {
-    const percentage =
-      stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
-
-    html += `
-            <div class="tag-card">
-                <div class="tag-name">🏷️ ${tag}</div>
-                <div class="tag-stats">
-                    <span>✅ ${stats.correct}/${stats.total}</span>
-                    <span>⭐ ${stats.points}/${stats.maxPoints}</span>
-                    <span>${percentage}%</span>
+    const container = document.getElementById('tagsStatsContainer');
+    if (!container) return;
+    
+    let html = '';
+    
+    if (Object.keys(tagsStats).length === 0) {
+        html = '<p style="text-align: center; color: #999; padding: 20px;">Нет данных по категориям</p>';
+    } else {
+        for (const [tag, stats] of Object.entries(tagsStats)) {
+            const correctPercent = stats.answered > 0 ? Math.round((stats.correct / stats.answered) * 100) : 0;
+            
+            html += `
+                <div class="tag-card">
+                    <div class="tag-name">🏷️ ${tag}</div>
+                    <div class="tag-stats">
+                        <div>✅ Верно: ${stats.correct}/${stats.answered}</div>
+                        <div>⭐ Баллы: ${stats.points}/${stats.maxPoints}</div>
+                        <div>📊 Успех: ${correctPercent}%</div>
+                    </div>
                 </div>
-            </div>
-        `;
-  }
-
-  container.innerHTML = html || "<p>Нет данных по категориям</p>";
+            `;
+        }
+    }
+    
+    container.innerHTML = html;
 }
 
 function displayDetailedResults() {
-  const container = document.getElementById("detailedResults");
-  const answers = quizManager.userAnswers.filter((a) => a !== null);
-
-  let html = "";
-
-  answers.forEach((answer, index) => {
-    html += `
-            <div class="question-result-item">
-                <div class="question-result-info">
-                    <div class="question-result-text">${answer.question}</div>
-                    <div class="question-result-meta">
-                        Ваш ответ: ${Array.isArray(answer.userAnswer) ? answer.userAnswer.join(", ") : answer.userAnswer}<br>
-                        Правильный ответ: ${Array.isArray(answer.correctAnswer) ? answer.correctAnswer.join(", ") : answer.correctAnswer}
+    const container = document.getElementById('detailedResults');
+    if (!container) return;
+    
+    const answers = quizManager.userAnswers.filter(a => a !== null && a.answered === true);
+    
+    let html = '';
+    
+    if (answers.length === 0) {
+        html = '<p style="text-align: center; color: #999; padding: 20px;">Нет отвеченных вопросов</p>';
+    } else {
+        answers.forEach((answer, index) => {
+            const statusClass = answer.isCorrect ? 'status-correct' : 'status-incorrect';
+            const statusText = answer.isCorrect 
+                ? `✅ +${answer.points}` 
+                : answer.hasNoAnswer ? '⏭️ Пропущено' : '❌ 0';
+            
+            html += `
+                <div class="question-result-item">
+                    <div class="question-result-info">
+                        <div class="question-result-text">${index + 1}. ${answer.question}</div>
+                        <div class="question-result-meta">
+                            Ваш ответ: ${formatAnswer(answer.userAnswerDisplay)}<br>
+                            Правильный ответ: ${formatAnswer(answer.correctAnswer)}
+                        </div>
+                    </div>
+                    <div class="question-result-status ${statusClass}">
+                        ${statusText}/${answer.maxPoints}
                     </div>
                 </div>
-                <div class="question-result-status ${answer.isCorrect ? "status-correct" : "status-incorrect"}">
-                    ${answer.isCorrect ? `✅ +${answer.points}` : `❌ 0/${answer.maxPoints}`}
-                </div>
-            </div>
-        `;
-  });
+            `;
+        });
+    }
+    
+    container.innerHTML = html;
+}
 
-  container.innerHTML = html || "<p>Нет отвеченных вопросов</p>";
+function formatAnswer(answer) {
+    if (answer === null || answer === undefined) return 'Нет ответа';
+    if (Array.isArray(answer)) return answer.join(', ') || 'Ничего не выбрано';
+    return answer.toString();
 }
 
 function exportResults() {

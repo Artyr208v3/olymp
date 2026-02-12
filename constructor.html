@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Конструктор вопросов JSON</title>
 
-    <!-- Font Awesome для иконок -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -14,7 +13,6 @@
   </head>
   <body>
     <div class="constructor-container">
-      <!-- Header -->
       <div class="header">
         <div class="logo"><i class="fas fa-tools"></i> Constructor</div>
         <div>
@@ -28,9 +26,7 @@
         </div>
       </div>
 
-      <!-- Контент -->
       <div class="content">
-        <!-- Статистика -->
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-value" id="statTotal">0</div>
@@ -50,7 +46,6 @@
           </div>
         </div>
 
-        <!-- Панель управления -->
         <div class="control-panel">
           <div>
             <button class="btn btn-primary" onclick="createNewQuestion()">
@@ -70,15 +65,12 @@
           </div>
         </div>
 
-        <!-- Прогресс бар (скрыт по умолчанию) -->
         <div id="progressBar" class="progress-bar" style="display: none">
           <div id="progressFill" class="progress-fill"></div>
         </div>
 
-        <!-- Список вопросов -->
         <div id="questionsList" class="questions-list"></div>
 
-        <!-- Форма создания вопроса (скрыта по умолчанию) -->
         <div id="questionForm" class="question-form" style="display: none">
           <div class="form-title">
             <i class="fas fa-edit"></i>
@@ -88,7 +80,6 @@
           <input type="hidden" id="questionId" value="" />
 
           <div class="form-grid">
-            <!-- Тип вопроса -->
             <div class="form-group">
               <label class="form-label">Тип вопроса</label>
               <select
@@ -103,7 +94,6 @@
               </select>
             </div>
 
-            <!-- Баллы -->
             <div class="form-group">
               <label class="form-label">Баллы</label>
               <input
@@ -116,7 +106,6 @@
               />
             </div>
 
-            <!-- Текст вопроса -->
             <div class="form-group full-width">
               <label class="form-label">Текст вопроса</label>
               <input
@@ -127,7 +116,6 @@
               />
             </div>
 
-            <!-- Изображение (для типа image) -->
             <div
               id="imageUploadGroup"
               class="form-group full-width"
@@ -162,7 +150,6 @@
               <input type="hidden" id="imageName" value="" />
             </div>
 
-            <!-- Варианты ответов (для checkbox/radio/image) -->
             <div
               id="optionsGroup"
               class="form-group full-width"
@@ -181,7 +168,6 @@
               </div>
             </div>
 
-            <!-- Правильный ответ -->
             <div id="correctAnswerGroup" class="form-group full-width">
               <label class="form-label" id="correctAnswerLabel"
                 >Правильный ответ</label
@@ -189,7 +175,6 @@
               <div id="correctAnswerInput"></div>
             </div>
 
-            <!-- Теги -->
             <div class="form-group full-width">
               <label class="form-label">Теги (категории)</label>
               <div class="tags-input-container" id="tagsContainer">
@@ -226,7 +211,6 @@
           </div>
         </div>
 
-        <!-- Пустое состояние -->
         <div
           id="emptyState"
           style="
@@ -253,7 +237,6 @@
       </div>
     </div>
 
-    <!-- Модальное окно экспорта -->
     <div id="exportModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -305,7 +288,6 @@
       </div>
     </div>
 
-    <!-- Уведомление -->
     <div id="notification" class="notification"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
