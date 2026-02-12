@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App с метриками</title>
+    
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header с навигацией -->
+        <div class="header">
+            <div class="logo">📊 Quiz Master</div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="quiz">📝 Тестирование</button>
+                <button class="nav-tab" data-tab="results">📈 Результаты</button>
+            </div>
+        </div>
+
+        <!-- Загрузка JSON -->
+        <div class="json-input">
+            <label for="jsonFile" class="json-file-label">
+                📁 Загрузить JSON файл с вопросами
+            </label>
+            <input type="file" id="jsonFile" accept=".json, application/json">
+        </div>
+
+        <!-- Вкладка с тестом -->
+        <div id="quizTab" class="tab-content active">
+            <div id="loader" class="loader">
+                <div class="spinner"></div>
+                Загрузка вопросов...
+            </div>
+            
+            <div id="content" style="display: none;">
+                <!-- Прогресс бар -->
+                <div class="progress-container">
+                    <div class="progress-info">
+                        <span id="counter">Вопрос 0 из 0</span>
+                        <span id="scoreDisplay">⭐ 0 баллов</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                </div>
+                
+                <!-- Карточка вопроса -->
+                <div class="quiz-card">
+                    <div class="question-header">
+                        <span class="question-tag" id="questionTag"></span>
+                        <span class="question-points" id="questionPoints"></span>
+                    </div>
+                    
+                    <div class="question-section">
+                        <div class="question" id="question"></div>
+                    </div>
+                    
+                    <div class="answers-area" id="answersArea"></div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-check" id="checkBtn">
+                            📝 Проверить ответ
+                        </button>
+                        <button class="btn btn-next" id="nextBtn">
+                            ➡️ Следующий вопрос
+                        </button>
+                    </div>
+                    
+                    <div class="correct-answer" id="correctAnswer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка с результатами -->
+        <div id="resultsTab" class="tab-content">
+            <div class="results-header">
+                <h2>📊 Ваши результаты</h2>
+                <button id="exportResultsBtn" class="btn btn-export">
+                    📥 Экспорт результатов
+                </button>
+            </div>
+            
+            <!-- Общая статистика -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Всего вопросов</span>
+                        <span class="stat-value" id="totalQuestions">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Правильных</span>
+                        <span class="stat-value" id="correctAnswers">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Неправильных</span>
+                        <span class="stat-value" id="wrongAnswers">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Всего баллов</span>
+                        <span class="stat-value" id="totalScore">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Круговая диаграмма -->
+            <div class="chart-container">
+                <canvas id="scoreChart"></canvas>
+            </div>
+
+            <!-- Статистика по тегам -->
+            <div class="tags-stats">
+                <h3>📌 Статистика по категориям</h3>
+                <div id="tagsStatsContainer" class="tags-grid"></div>
+            </div>
+
+            <!-- Детальный разбор -->
+            <div class="detailed-results">
+                <h3>📝 Детальный разбор вопросов</h3>
+                <div id="detailedResults" class="questions-list"></div>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <!-- JavaScript модули -->
+    <script src="js/quiz.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

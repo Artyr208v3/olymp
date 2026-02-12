@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Конструктор вопросов JSON</title>
+
+    <!-- Font Awesome для иконок -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/constructor.css" />
+  </head>
+  <body>
+    <div class="constructor-container">
+      <!-- Header -->
+      <div class="header">
+        <div class="logo"><i class="fas fa-tools"></i> Constructor</div>
+        <div>
+          <span style="color: #666; margin-right: 15px">
+            <i class="fas fa-database"></i>
+            <span id="questionCount">0</span> вопросов
+          </span>
+          <a href="index.html" class="nav-btn" target="_blank">
+            <i class="fas fa-external-link-alt"></i> Открыть тест
+          </a>
+        </div>
+      </div>
+
+      <!-- Контент -->
+      <div class="content">
+        <!-- Статистика -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Всего вопросов</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statPoints">0</div>
+            <div class="stat-label">Всего баллов</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statImages">0</div>
+            <div class="stat-label">Изображений</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statTags">0</div>
+            <div class="stat-label">Уникальных тегов</div>
+          </div>
+        </div>
+
+        <!-- Панель управления -->
+        <div class="control-panel">
+          <div>
+            <button class="btn btn-primary" onclick="createNewQuestion()">
+              <i class="fas fa-plus-circle"></i> Новый вопрос
+            </button>
+            <button class="btn btn-warning" onclick="importQuestions()">
+              <i class="fas fa-file-import"></i> Импорт JSON
+            </button>
+          </div>
+          <div>
+            <button class="btn btn-success" onclick="saveProject()">
+              <i class="fas fa-save"></i> Сохранить проект
+            </button>
+            <button class="btn btn-danger" onclick="exportAll()">
+              <i class="fas fa-download"></i> Экспорт
+            </button>
+          </div>
+        </div>
+
+        <!-- Прогресс бар (скрыт по умолчанию) -->
+        <div id="progressBar" class="progress-bar" style="display: none">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+
+        <!-- Список вопросов -->
+        <div id="questionsList" class="questions-list"></div>
+
+        <!-- Форма создания вопроса (скрыта по умолчанию) -->
+        <div id="questionForm" class="question-form" style="display: none">
+          <div class="form-title">
+            <i class="fas fa-edit"></i>
+            <span id="formTitle">Создание нового вопроса</span>
+          </div>
+
+          <input type="hidden" id="questionId" value="" />
+
+          <div class="form-grid">
+            <!-- Тип вопроса -->
+            <div class="form-group">
+              <label class="form-label">Тип вопроса</label>
+              <select
+                id="questionType"
+                class="form-control"
+                onchange="onQuestionTypeChange()"
+              >
+                <option value="free">📝 Свободный ответ</option>
+                <option value="radio">🔘 Один вариант</option>
+                <option value="checkbox">✅ Несколько вариантов</option>
+                <option value="image">🖼️ С изображением</option>
+              </select>
+            </div>
+
+            <!-- Баллы -->
+            <div class="form-group">
+              <label class="form-label">Баллы</label>
+              <input
+                type="number"
+                id="questionPoints"
+                class="form-control"
+                value="1"
+                min="1"
+                max="100"
+              />
+            </div>
+
+            <!-- Текст вопроса -->
+            <div class="form-group full-width">
+              <label class="form-label">Текст вопроса</label>
+              <input
+                type="text"
+                id="questionText"
+                class="form-control"
+                placeholder="Введите вопрос..."
+              />
+            </div>
+
+            <!-- Изображение (для типа image) -->
+            <div
+              id="imageUploadGroup"
+              class="form-group full-width"
+              style="display: none"
+            >
+              <label class="form-label">Изображение</label>
+              <div
+                id="imageUploadArea"
+                class="image-upload-area"
+                onclick="document.getElementById('imageInput').click()"
+              >
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Нажмите для загрузки изображения</p>
+                <p style="font-size: 12px; color: #999">
+                  или перетащите файл сюда
+                </p>
+                <input
+                  type="file"
+                  id="imageInput"
+                  accept="image/*"
+                  style="display: none"
+                  onchange="handleImageUpload(event)"
+                />
+                <img
+                  id="imagePreview"
+                  class="image-preview"
+                  src=""
+                  alt="Preview"
+                />
+              </div>
+              <input type="hidden" id="imageData" value="" />
+              <input type="hidden" id="imageName" value="" />
+            </div>
+
+            <!-- Варианты ответов (для checkbox/radio/image) -->
+            <div
+              id="optionsGroup"
+              class="form-group full-width"
+              style="display: none"
+            >
+              <label class="form-label">Варианты ответов</label>
+              <div class="options-container">
+                <div id="optionsList"></div>
+                <button
+                  type="button"
+                  class="add-option-btn"
+                  onclick="addOption()"
+                >
+                  <i class="fas fa-plus"></i> Добавить вариант
+                </button>
+              </div>
+            </div>
+
+            <!-- Правильный ответ -->
+            <div id="correctAnswerGroup" class="form-group full-width">
+              <label class="form-label" id="correctAnswerLabel"
+                >Правильный ответ</label
+              >
+              <div id="correctAnswerInput"></div>
+            </div>
+
+            <!-- Теги -->
+            <div class="form-group full-width">
+              <label class="form-label">Теги (категории)</label>
+              <div class="tags-input-container" id="tagsContainer">
+                <div id="tagsList"></div>
+                <input
+                  type="text"
+                  id="tagInput"
+                  class="tag-input"
+                  placeholder="Введите тег и нажмите Enter"
+                  onkeydown="handleTagKeydown(event)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              gap: 15px;
+              justify-content: flex-end;
+              margin-top: 20px;
+            "
+          >
+            <button
+              class="btn"
+              onclick="cancelForm()"
+              style="background: #f0f0f0"
+            >
+              <i class="fas fa-times"></i> Отмена
+            </button>
+            <button class="btn btn-success" onclick="saveQuestion()">
+              <i class="fas fa-check"></i> Сохранить вопрос
+            </button>
+          </div>
+        </div>
+
+        <!-- Пустое состояние -->
+        <div
+          id="emptyState"
+          style="
+            text-align: center;
+            padding: 60px 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+          "
+        >
+          <i
+            class="fas fa-clipboard-list"
+            style="font-size: 64px; color: #ccc; margin-bottom: 20px"
+          ></i>
+          <h3 style="color: #666; margin-bottom: 10px">
+            Нет созданных вопросов
+          </h3>
+          <p style="color: #999; margin-bottom: 20px">
+            Создайте первый вопрос, нажав на кнопку "Новый вопрос"
+          </p>
+          <button class="btn btn-primary" onclick="createNewQuestion()">
+            <i class="fas fa-plus-circle"></i> Создать вопрос
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно экспорта -->
+    <div id="exportModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 style="color: #2c3e50">
+            <i class="fas fa-download"></i> Экспорт проекта
+          </h3>
+          <button class="modal-close" onclick="closeModal('exportModal')">
+            &times;
+          </button>
+        </div>
+
+        <div style="margin-bottom: 20px">
+          <p style="margin-bottom: 15px; color: #666">
+            Выберите формат экспорта:
+          </p>
+
+          <button
+            class="btn btn-primary"
+            style="width: 100%; margin-bottom: 10px"
+            onclick="exportJSON()"
+          >
+            <i class="fas fa-file-code"></i> Только JSON
+          </button>
+
+          <button
+            class="btn btn-success"
+            style="width: 100%; margin-bottom: 10px"
+            onclick="exportWithImages()"
+          >
+            <i class="fas fa-file-archive"></i> JSON + Изображения (ZIP)
+          </button>
+
+          <button
+            class="btn btn-warning"
+            style="width: 100%"
+            onclick="exportHTML()"
+          >
+            <i class="fas fa-file-export"></i> Полный проект
+            (HTML+JSON+Изображения)
+          </button>
+        </div>
+
+        <div style="border-top: 1px solid #f0f0f0; padding-top: 15px">
+          <p style="font-size: 12px; color: #999">
+            <i class="fas fa-info-circle"></i>
+            При экспорте с изображениями создается ZIP архив со всеми файлами
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Уведомление -->
+    <div id="notification" class="notification"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script src="js/constructor.js"></script>
+  </body>
+</html>

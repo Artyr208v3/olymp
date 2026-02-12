@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "type": "free",
+    "question": "Какая столица Франции?",
+    "correctAnswer": "Париж",
+    "points": 2,
+    "tags": ["География", "Столицы"]
+  },
+  {
+    "id": 2,
+    "type": "checkbox",
+    "question": "Какие из перечисленных языков являются языками программирования?",
+    "options": ["Python", "HTML", "JavaScript", "CSS", "Java"],
+    "correctAnswer": ["Python", "JavaScript", "Java"],
+    "points": 5,
+    "tags": ["Программирование", "Технологии"]
+  },
+  {
+    "id": 3,
+    "type": "radio",
+    "question": "Сколько планет в Солнечной системе?",
+    "options": ["7", "8", "9", "10"],
+    "correctAnswer": "8",
+    "points": 3,
+    "tags": ["Астрономия", "Наука"]
+  },
+  {
+    "id": 4,
+    "type": "image",
+    "question": "Какое животное изображено на картинке?",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg",
+    "options": ["Кошка", "Собака", "Кролик", "Лиса"],
+    "correctAnswer": "Кошка",
+    "points": 4,
+    "tags": ["Животные", "Картинки"]
+  },
+  {
+    "id": 5,
+    "type": "image",
+    "question": "Какой это фрукт?",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Banana-Single.jpg",
+    "options": ["Яблоко", "Банан", "Апельсин", "Груша"],
+    "correctAnswer": "Банан",
+    "points": 3,
+    "tags": ["Еда", "Картинки"]
+  },
+  {
+    "id": 6,
+    "type": "free",
+    "question": "Сколько месяцев в году?",
+    "correctAnswer": "12",
+    "points": 1,
+    "tags": ["Общее", "Календарь"]
+  }
+]
